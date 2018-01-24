@@ -1,0 +1,11 @@
+---
+
+kafka:
+  version: "{{ kafka_version | default('0.10.2.1') }}"
+  uid: "{{kafka_uid | default(3000)}}"
+  gid: "{{kafka_gid | default(3000)}}"
+
+  package_name: "{{ kafka_package_name | default('kafka_'+(kafka_scala_version | default('2.11'))|string+'-'+(kafka_version | default('0.10.2.1'))|string) }}"
+  download_dir: "{{ kafka_download_dir | default('/tmp/kafka') }}"
+  file: "{{kafka_download_dir | default('/tmp/kafka')}}/{{kafka_download_file | default(kafka_package_name | default('kafka_'+(kafka_scala_version | default('2.11'))|string+'-'+(kafka_version | default('0.10.2.1'))|string)+'.tgz') }}"
+  url: "{{kafka_url | default(apache_mirror|default('http://www.us.apache.org/dist/')+'kafka/'+(kafka_version | default('0.10.2.1'))+'/'+kafka_download_file | default(kafka_package_name | default('kafka_'+(kafka_scala_version | default('2.11'))|string+'-'+(kafka_version | default('0.10.2.1'))|string)+'.tgz'))}}"

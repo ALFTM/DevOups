@@ -1,0 +1,7 @@
+---
+
+  - name: build kafka docker image
+    hosts: registry
+    any_errors_fatal: true
+    roles:
+      - {role: docker.kafka, tags: ['kafka_brokers']}

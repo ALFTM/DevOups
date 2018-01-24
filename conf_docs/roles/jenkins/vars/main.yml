@@ -1,0 +1,220 @@
+---
+
+# Defaults file for jenkins
+
+# Specific vars values for Debian family
+
+jenkins_repository_file_prefix: '/etc/apt/sources.list.d'
+jenkins_repository_file: 'pkg_jenkins_ci_org_debian.list'
+
+jenkins_default_cfg_prefix: '/etc/default'
+jenkins_default_cfg_file: 'jenkins'
+
+jenkins_package_name: 'jenkins'
+jenkins_service_name: 'jenkins'
+
+jenkins_system_dependencies:
+  - 'python-httplib2'
+
+# Ubuntu repository vars
+jenkins_repository_key_url: 'https://pkg.jenkins.io/debian/jenkins.io.key'
+jenkins_repository_content: 'deb http://pkg.jenkins.io/debian binary/'
+jenkins_package_state: 'latest'
+
+jenkins_system_dependencies: []
+jenkins_system_dependencies_state: 'present'
+
+# Configuration file settings
+jenkins_default_cfg_file_owner: 'root'
+jenkins_default_cfg_file_group: 'root'
+jenkins_default_cfg_file_mode: '0640'
+jenkins_default_adm_passd_file: '/var/lib/jenkins/secrets/initialAdminPassword'
+
+# Configuration file content variables
+jenkins_etc_name: 'jenkins'
+jenkins_etc_user: 'jenkins'
+jenkins_etc_group: 'jenkins'
+jenkins_etc_run_standalone: True
+jenkins_etc_max_open_files: 8192
+jenkins_etc_umask: '022'
+jenkins_etc_listen_address: "{{hostvars[(groups.jenkins | first)]['ansible_ssh_host']}}"
+jenkins_etc_http_port: 8080
+jenkins_etc_ajp_port: -1
+jenkins_etc_servlet_context_prefix: "/{{ jenkins_etc_name }}"
+jenkins_etc_prefix: '/'
+
+# Location and files configuration
+jenkins_etc_java_location: '/usr/bin/java'
+jenkins_etc_war_location: >
+  /usr/share/{{ jenkins_etc_name }}/{{ jenkins_etc_name }}.war
+jenkins_etc_home_location: "/var/lib/{{ jenkins_etc_name }}"
+jenkins_etc_log_location: >
+  /var/log/{{ jenkins_etc_name }}/{{ jenkins_etc_name }}.log
+jenkins_etc_pid_file: >
+  /var/run/{{ jenkins_etc_name }}/{{ jenkins_etc_name }}.pid
+
+# Java and jenkins arguments
+jenkins_etc_java_args:
+  - '-Dhudson.diyChunking=false'
+  - '-Djava.awt.headless=true'
+  - -Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox; default-src 'none'; img-src 'self'; style-src 'self';\"
+jenkins_etc_args:
+  - "--webroot=/var/cache/{{ jenkins_etc_name }}/war"
+  - "--httpListenAddress={{ jenkins_etc_listen_address }}"
+  - "--httpPort={{ jenkins_etc_http_port }}"
+  - "--ajp13Port={{ jenkins_etc_ajp_port }}"
+  - "--prefix={{ jenkins_etc_prefix }}"
+
+# Jenkins cli
+jenkins_base_url: "{{ 'http://' ~ jenkins_etc_listen_address ~ ':'
+  ~ jenkins_etc_http_port ~ jenkins_etc_prefix }}"
+jenkins_cli_download_url: "{{ jenkins_base_url }}/jnlpJars/jenkins-cli.jar"
+jenkins_cli_path: "{{ jenkins_etc_home_location }}/jenkins-cli.jar"
+jenkins_deployment_ssh_key: "{{ jenkins_etc_home_location }}/.ssh/id_rsa"
+jenkins_groovy_scripts_path: "{{ jenkins_etc_home_location }}/groovy_scripts"
+
+# Jenkins waiting availability test
+jenkins_waiting_available_retries: 10
+jenkins_waiting_available_delay: 5
+
+# Jenkins clouds
+jenkins_main_cfg_clouds: []
+
+# Jenkins plugin management
+jenkins_manage_plugin_install: True
+jenkins_manage_plugin_upgrade: False
+
+# CONFIGURATION
+#--------------
+jenkins_configuration_files_owner: "{{ jenkins_etc_user }}"
+jenkins_configuration_files_group: "{{ jenkins_etc_group }}"
+jenkins_configuration_files_mode: '0644'
+
+# Main configuration
+jenkins_config_disable_remember_me: False
+jenkins_config_label: ''
+jenkins_config_mode: 'NORMAL'
+jenkins_config_num_executors: 2
+jenkins_config_project_naming_strategy:
+  pattern: '\w+'
+  description: 'Alphanumeric pattern'
+  force: True
+jenkins_config_quiet_period: 5
+jenkins_config_scm_checkout_retry_count: 0
+jenkins_config_slave_agent_port: 0
+
+# Jenkins users configuration
+jenkins_manage_users_and_security: True
+jenkins_deployment_user:
+  username: 'admin'
+  full_name: 'Jenkins deployment user'
+  email: 'admin@foo.bar'
+  password: 'admin'
+  ssh:
+    private: ''
+    public: ''
+
+jenkins_users:
+  - username: 'admin'
+    full_name: 'Jenkins administrator user'
+    email: 'admin@foo.bar'
+    password: 'admin'
+    roles:
+      - 'jenkins-administer'
+    public_keys: []
+  - username: 'read'
+    full_name: 'Jenkins read only user'
+    email: 'read@foo.bar'
+    password: 'read'
+    roles:
+      - 'jenkins-read'
+      - 'item-build'
+      - 'item-discover'
+      - 'item-read'
+      - 'view-read'
+    public_keys: []
+
+# Jenkins realm management
+jenkins_security_realm:
+  class: 'HudsonPrivateSecurityRealm'
+
+# Jenkins authorization strategy management
+jenkins_authorization_strategy:
+  class: 'GlobalMatrixAuthorizationStrategy'
+
+# Jenkins crumb issuer, set to disable because not work with CLI
+jenkins_crumb:
+  issuer: ''
+  exclude_client_ip: False
+
+# Jenkins location settings
+jenkins_location_administrator_email: 'root@localhost'
+jenkins_location_administrator_full_name: 'Jenkins administrator'
+jenkins_location_url: 'http://jenkins.foo.bar/'
+
+
+# Credentials configuration
+#==========================
+jenkins_credentials_domains_to_empty: []
+jenkins_credentials: []
+
+# Plugins configuration
+#======================
+
+# Plugins management
+jenkins_plugins:
+  - name: 'ansible'
+  - name: 'ansicolor'
+  - name: 'antisamy-markup-formatter'
+  - name: 'credentials-binding'
+  - name: 'debian-package-builder'
+  - name: 'docker-plugin'
+  - name: 'bitbucket'
+  - name: 'git'
+  - name: 'ldap'
+  - name: 'mailer'
+  - name: 'matrix-auth'
+  - name: 'ssh'
+  - name: 'sbt'
+  - name: 'slack'
+  - name: 'build-pipeline-plugin'
+  - name: 'workflow-aggregator'
+jenkins_plugins_state: 'latest'
+
+# Plugins: git
+jenkins_plugin_git_manage_configuration: True
+jenkins_plugin_git_global_full_name: "Jenkins GitUser"
+jenkins_plugin_git_global_email: "git@foo.bar"
+jenkins_plugin_git_create_account_based_on_email: False
+
+# Plugins: mailer
+jenkins_plugin_mailer_manage_configuration: True
+jenkins_plugin_mailer:
+  charset: 'UTF-8'
+  default_suffix: ''
+  reply_to: ''
+  smtp_host: ''
+  smtp_password: ''
+  smtp_port: 25
+  smtp_user: ''
+  use_ssl: False
+
+# Plugins: github
+jenkins_plugin_github_manage_configuration: True
+jenkins_plugin_github_remove_servers: True
+jenkins_plugin_github_servers: []
+
+# Plugins: debian package builder
+jenkins_plugin_debian_package_builder_manage_configuration: True
+jenkins_plugin_debian_package_builder_remove_repositories: True
+jenkins_plugin_debian_package_builder_gpg:
+  name: 'Foo Bar'
+  email: 'foo@bar.fr'
+  public_key: 'foo_public_key'
+  private_key: 'foo_private_key'
+  passphrase: 'foo_passphrase'
+jenkins_plugin_debian_package_builder_repo: []
+
+# Plugins: docker
+jenkins_plugin_docker_manage_configuration: True
+jenkins_plugin_docker_clouds: []

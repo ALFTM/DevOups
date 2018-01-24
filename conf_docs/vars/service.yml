@@ -1,0 +1,18 @@
+---
+
+service:
+  name: "{{service_name | default('exampleService')}}"
+  tag: "{{service_tag | default('latest') | replace('/', '_')}}"
+  config:
+    dir: "{{ service_config_dir | default('/etc/'+(service_name | default('exampleService'))+'-'+(service_tag | default('latest') | replace('/', '_'))+'/config')}}"
+    templates: "{{ service_config_templates }}"
+  logs:
+    dir: "{{ service_logs_dir | default('/var/logs/'+(service_name | default('exampleService'))+'-'+(service_tag | default('latest') | replace('/', '_')))}}"
+    file: "{{ service_log_file | default('application.log')}}"
+    rootLevel: "{{service_root_log_level | default('INFO')}}"
+    template: "{{ service_logs_template | default('logback.xml') }}"
+  port: "{{service_port | default(9000)}}"
+  debugPort: "{{service_debug_port | default(5050)}}"
+  host:
+    port: "{{service_host_port | default(9000)}}"
+    debugPort: "{{service_host_debug_port | default(5050)}}"

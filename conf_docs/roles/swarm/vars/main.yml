@@ -1,0 +1,5 @@
+---
+
+swarm:
+  manager:
+    ip: "{{hostvars[(groups.master | first)]['ansible_ssh_host']}}"

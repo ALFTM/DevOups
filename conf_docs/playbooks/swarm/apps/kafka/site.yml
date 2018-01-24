@@ -1,0 +1,5 @@
+---
+
+  - include: build.yml
+  - include: install.yml
+  - include: postinstall.yml

@@ -1,0 +1,7 @@
+---
+
+zookeeper:
+  data: "{{zookeeper_data | default('/usr/local/zookeeper/data')}}"
+  datalog: "{{zookeeper_datalog | default('/usr/local/zookeeper/datalog')}}"
+  interface: "{{zookeeper_interface | default('ansible_default_ipv4')}}"
+  my_id: "{{zookeeper_my_id | default(1)}}"

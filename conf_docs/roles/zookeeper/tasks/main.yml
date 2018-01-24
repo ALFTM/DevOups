@@ -1,0 +1,50 @@
+---
+
+  - name: check zookeeper group
+    fail: msg="zookeeper group must be defined"
+    when: groups.zookeeper is undefined
+
+  - set_fact: nb={{groups.zookeeper|list|length}}
+
+  - name: check cluster size
+    fail: msg="the number of nodes within the cluster must be odd"
+    when: "{{ (nb|int)%2 == 0 }}"
+
+  - name: create zookeeper data directory
+    file: path={{zookeeper.data}} state=directory
+    become: yes
+
+  - name: create zookeeper datalog directory
+    file: path={{zookeeper.datalog}} state=directory
+    become: yes
+
+  - name: gather facts from zookeeper nodes
+    setup: gather_subset=network
+    delegate_to: "{{item}}"
+    delegate_facts: True
+    with_items: "{{groups['zookeeper']}}"
+    register: zookeeper_facts
+    become: yes
+
+  - debug: var=zookeeper_facts
+
+  - set_fact: zookeepers={{(zookeeper_facts.results | map(attribute='ansible_facts.'+zookeeper.interface+'.address') | list)}}
+    when: zookeeper_facts|success
+
+  - name: generate zookeeper servers
+    set_fact: zks="{% for id in range(0, nb|int) %}server.{{(id|int)+1}}={{zookeepers[id|int]}}:2888:3888{% if not loop.last %} {% endif %}{% endfor %}"
+
+  - name: stop previous zookeeper container
+    command: "docker kill zookeeper"
+    ignore_errors: yes
+    become: yes
+
+  - name: remove previous zookeeper container
+    command: "docker rm zookeeper"
+    ignore_errors: yes
+    become: yes
+
+  - name: ensure zookeeper container is running
+    command: "docker run -d -p 2181:2181 -p 2888:2888 -p 3888:3888 --name zookeeper --net=host --privileged=true --restart=always --memory=\"512m\" -v {{zookeeper.data}}:/data:rw -v {{zookeeper.datalog}}:/datalog:rw --env ZOO_MY_ID={{zookeeper.my_id}} --env 'ZOO_SERVERS={{zks}}' zookeeper:3.4"
+    register: start_zookeeper
+    become: yes

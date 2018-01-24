@@ -1,0 +1,7 @@
+---
+
+  - name: Install jenkins
+    hosts: jenkins
+    any_errors_fatal: true
+    roles:
+      - {role: jenkins}

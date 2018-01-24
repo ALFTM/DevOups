@@ -1,0 +1,42 @@
+---
+
+  - name: install ntp
+    include: ntp.yml
+
+  - name: leave worker from the swarm
+    command: "docker swarm leave --force"
+    ignore_errors: yes
+    become: yes
+    when: "installation == 'manager' and 'master' in group_names"
+
+  - name: create swarm manager
+    command: docker swarm init --advertise-addr {{swarm.manager.ip}} --force-new-cluster
+    tags:
+      - add_manager
+    when: "installation == 'manager' and 'master' in group_names"
+    sudo: yes
+
+  - name: retrieve swarm token
+    command: docker swarm join-token -q worker
+    delegate_to: "{{item}}"
+    with_items:
+      - "{{(groups['master']|list)[0]}}"
+    become: yes
+    tags:
+      - add_worker
+    register: swarm_token
+    when: "groups.master is defined and groups.master|list|length >= 1 and installation == 'worker' and 'slave' in group_names"
+
+  - set_fact: token={{swarm_token.results[0].stdout}}
+    when: "installation == 'worker' and 'slave' in group_names"
+
+  - name: leave worker from the swarm
+    command: "docker swarm leave --force"
+    ignore_errors: yes
+    become: yes
+    when: "installation == 'worker' and 'slave' in group_names"
+
+  - name: add worker to the swarm
+    shell: "docker swarm join --token {{token}} {{swarm.manager.ip}}:2377"
+    become: yes
+    when: "installation == 'worker' and 'slave' in group_names"

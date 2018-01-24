@@ -1,0 +1,8 @@
+---
+
+pip_extra_args: ""
+proxy_env: {}
+
+docker_registry_users:
+  - name: docker
+    password: changeit

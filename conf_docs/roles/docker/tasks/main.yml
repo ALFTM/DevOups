@@ -1,0 +1,44 @@
+---
+
+  - name: check if docker has already been installed
+    shell: command -v "docker" > /dev/null 2>&1 && [ -e /var/run/docker.sock ]
+    ignore_errors: true
+    become: yes
+    register: docker_installed
+
+  - name: Fail if not an Ubuntu or Centos distribution
+    fail:
+      msg: "{{ ansible_distribution }} is not an acceptable distribution for this role"
+    when: ansible_distribution != 'Ubuntu' and ansible_distribution != 'CentOS'
+
+  - name: Fail if not a new release of Ubuntu
+    fail:
+      msg: "{{ ansible_distribution_version }} is not an acceptable version of Ubuntu for this role"
+    when: ansible_distribution == 'Ubuntu' and ansible_distribution_version|version_compare(14.04, '<')
+
+  - include: ubuntu.yml
+    when: ansible_distribution == 'Ubuntu' and (not docker_installed or (docker_installed|failed))
+
+  - name: Fail if not a new release of Centos
+    fail:
+      msg: "{{ ansible_distribution_version }} is not an acceptable version of Centos for this role"
+    when: ansible_distribution == 'CentOS' and ansible_distribution_version|version_compare(7, '<')
+
+  - include: centos.yml
+    when: ansible_distribution == 'CentOS' and (not docker_installed or (docker_installed|failed))
+
+  - name: Enable Docker service on boot and Start it
+    service: name=docker enabled=yes state=restarted
+    become: yes
+
+  - name: Add script to clean resources (containers and images)
+    copy: src=clean-docker.sh dest=/usr/local/bin/ mode=0500
+    become: yes
+    tags:
+      - clean_docker
+
+  - name: Deploy cron job to clean resources
+    lineinfile: dest=/etc/crontab regexp='(.*)/usr/local/bin/clean-docker.sh' line='{{clean.docker.cron}} root /usr/local/bin/clean-docker.sh > /var/log/clean-docker.log 2>&1' state=present
+    become: yes
+    tags:
+      - clean_docker

@@ -1,0 +1,19 @@
+--- 
+  # sudo cp /root/.docker/config.json /var/lib/jenkins/.docker/ && sudo chown jenkins:jenkins /var/lib/jenkins/.docker/config.jso
+  - name: Add Jenkins user to docker group
+    shell: usermod -aG docker jenkins
+    become: yes
+  
+  - name: create .docker directory
+    file: path=/var/lib/jenkins/.docker/ state=directory owner=jenkins group=jenkins
+    become: yes  
+
+  - name: Add Jenkins docker authentication 
+    shell: >
+      cp /root/.docker/config.json /var/lib/jenkins/.docker/ && \
+      sudo chown jenkins:jenkins /var/lib/jenkins/.docker/config.json
+    become: yes
+    ignore_errors: yes
+
+  - name: restart jenkins
+    include: "{{role_path}}/tasks/utils/restart-jenkins.yml"  

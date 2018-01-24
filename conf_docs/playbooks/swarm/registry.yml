@@ -1,0 +1,13 @@
+---
+
+  - name: Install swarm private registry
+    hosts: registry
+    any_errors_fatal: true
+    roles:
+      - {role: docker.registry, tags: ['registry']}
+
+  - name: Login to swarm private registry
+    hosts: swarm
+    any_errors_fatal: true
+    roles:
+      - {role: docker.registry.client, tags: ['client_registry']}

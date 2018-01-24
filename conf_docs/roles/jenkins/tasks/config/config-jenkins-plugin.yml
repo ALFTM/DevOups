@@ -1,0 +1,9 @@
+---
+
+- name: install Jenkins plugins
+  shell: java -jar {{jenkins_cli_path}} -i {{ jenkins_deployment_ssh_key }} -s {{ jenkins_base_url }} install-plugin {{item.name}}
+  with_items: "{{ jenkins_plugins }}"
+  become: True
+
+- name: restart jenkins
+  include: "{{ role_path }}/tasks/utils/restart-jenkins.yml"

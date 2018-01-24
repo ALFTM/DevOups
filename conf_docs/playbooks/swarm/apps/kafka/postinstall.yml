@@ -1,0 +1,34 @@
+---
+
+  - name: Install kafka topics
+    hosts: middleware
+    any_errors_fatal: true
+    tasks:
+
+      - name: list all kafka topics
+        shell: "docker exec -t kafka /usr/local/kafka/bin/kafka-topics.sh --zookeeper {{broker_zk}} --list"
+        register: all_kafka_topics
+        run_once: yes
+        become: yes
+        tags:
+          - kafka_topics
+          - kafka_delete_topics
+
+      - name: delete all kafka topics
+        shell: "docker exec -t kafka /usr/local/kafka/bin/kafka-topics.sh --zookeeper {{broker_zk}} --delete --topic {{item}}"
+        register: delete_kafka_topics
+        with_items: "{{all_kafka_topics.stdout_lines|list}}"
+        run_once: yes
+        become: yes
+        tags:
+          - kafka_delete_topics
+
+      - name: create esgi kafka topic
+        shell: "docker exec -t kafka /usr/local/kafka/bin/kafka-topics.sh --create --zookeeper {{broker_zk}} --replication-factor {{broker.replications}} --partitions {{broker.partitions.esgi}} --topic {{broker.topics.esgi}}"
+        register: esgi_kafka_topic
+        run_once: yes
+        become: yes
+        retries: 5
+        tags:
+          - kafka_topics
+        when: broker.topics.esgi not in all_kafka_topics.stdout_lines|list

@@ -1,0 +1,17 @@
+---
+
+- name: Fail if not a Debian distribution
+  fail:
+    msg: "{{ ansible_os_family }} is not an acceptable os family for this role"
+  when: ansible_os_family != 'Debian'
+
+- name: Fetch Java version
+  shell: java -version 2>&1 | grep version | awk '{print $3}' | sed 's/"//g'
+  register: java_version
+
+- include: install/install-java8.yml
+  when: (java_version.stdout|length < 1 or (java_version.stdout | version_compare('1.8', '<')))
+
+- include: install/install-jenkins.yml
+
+- include: config/config-jenkins.yml

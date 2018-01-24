@@ -1,0 +1,85 @@
+---
+
+# Debian family specific installation tasks
+
+- name: 'Add Jenkins repository key'
+  become: True
+  apt_key:
+    url: "{{ jenkins_repository_key_url }}"
+    state: 'present'
+
+
+- name: 'Create Jenkins repository file'
+  become: True
+  apt_repository:
+    repo: "{{ jenkins_repository_content }}"
+    state: 'present'
+    update_cache: True
+
+
+- name: 'Install role system dependencies'
+  register: 'jenkins_task_package_install'
+  become: True
+  apt:
+    name: "{{ item }}"
+    state: "{{ jenkins_system_dependencies_state }}"
+  with_items: "{{ jenkins_system_dependencies }}"
+
+
+- name: 'Install Jenkins package'
+  register: 'jenkins_task_package_install'
+  become: True
+  apt:
+    name: "{{ jenkins_package_name }}"
+    state: "{{ jenkins_package_state }}"
+
+- name: 'Ensure Jenkins is started'
+  become: True
+  service:
+    name: "{{ jenkins_service_name }}"
+    state: 'started'
+
+- name: 'Create RSA SSH key for Jenkins user if defined'
+  become: True
+  copy:
+    dest: "{{ jenkins_etc_home_location }}/.ssh/{{ item.name }}"
+    content: "{{ item.content }}"
+    user: "{{ jenkins_etc_user }}"
+    group: "{{ jenkins_etc_group }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - name: 'id_rsa'
+      content: "{{ jenkins_deployment_user.ssh.private }}"
+      mode: '0600'
+    - name: 'id_rsa.pub'
+      content: "{{ jenkins_deployment_user.ssh.public }}"
+      mode: '0644'
+  when:
+    - "jenkins_deployment_user.ssh.private"
+    - "jenkins_deployment_user.ssh.public"
+
+
+- name: 'Create SSH key for Jenkins user if not defined'
+  become: True
+  user:
+    name: "{{ jenkins_etc_user }}"
+    generate_ssh_key: True
+
+
+- name: 'Get Jenkins user deployed public key'
+  become: True
+  command: "cat {{ jenkins_etc_home_location }}/.ssh/id_rsa.pub"
+  register: 'jenkins_user_ssh_public_key'
+  changed_when: False
+
+- name: 'Generate default config file'
+  become: True
+  register: 'jenkins_task_default_config'
+  template:
+    src: "{{ role_path }}/templates/default/jenkins.j2"
+    dest: "{{ jenkins_default_cfg_prefix }}/{{ jenkins_default_cfg_file }}"
+    owner: "{{ jenkins_default_cfg_file_owner }}"
+    group: "{{ jenkins_default_cfg_file_group }}"
+    mode: "{{ jenkins_default_cfg_file_mode }}"
+
+- include:  install-jenkins-cli.yml       

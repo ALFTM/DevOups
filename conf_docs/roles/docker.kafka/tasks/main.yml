@@ -1,0 +1,53 @@
+---
+
+  - shell: sysctl -w net.netfilter.nf_conntrack_tcp_be_liberal=1
+    become: yes
+    tags:
+      - always
+
+  - file: path={{tmp_directory | default('/tmp')}}/kafka state=directory
+    tags:
+      - always
+
+  - copy: src={{item}} dest={{tmp_directory | default('/tmp')}}/kafka
+    with_items:
+      - .dockerignore
+      - server.properties
+    tags:
+      - always
+
+  - template: src={{item}} dest={{tmp_directory | default('/tmp')}}/kafka
+    with_items:
+      - Dockerfile
+      - kafka.sh
+    tags:
+      - always
+
+  - include_vars: "{{inventory_dir}}/../../vars/registry.yml"
+    tags:
+      - always
+
+  - include: "{{inventory_dir}}/../../tasks/registry_facts.yml"
+    when: (not docker_registry_host is defined) or (not docker_registry_ip is defined)
+    tags:
+      - always
+
+  - name: build kafka docker image
+    shell: docker build -t {{docker_registry_host}}:{{docker.registry.port}}/kafka:{{kafka.version}} {{tmp_directory | default('/tmp')}}/kafka
+    become: yes
+    register: kafka_docker_image
+    tags:
+      - always
+
+  - name: Push kafka docker image to the registry
+    shell: docker push {{docker_registry_host}}:{{docker.registry.port}}/kafka:{{kafka.version}}
+    become: yes
+    when: kafka_docker_image|changed
+    tags:
+      - always
+
+  - name: clean temporary files
+    file: path={{tmp_directory | default('/tmp')}}/kafka state=absent
+    become: yes
+    tags:
+      - always

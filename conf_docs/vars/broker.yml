@@ -1,0 +1,36 @@
+---
+
+broker:
+  kafka:
+    version: "{{ kafka_version | default('0.10.2.1') }}"
+    uid: "{{kafka_uid | default(3000)}}"
+    gid: "{{kafka_gid | default(3000)}}"
+
+  interface: "{{broker_interface | default('ansible_default_ipv4')}}"
+  id: "{{broker_id | default(1)}}"
+  mem: "{{broker_mem | default(1024)}}"
+  log:
+    dir: "{{ broker_log_dir | default('/var/log/kafka') }}"
+    dirs: "{{ broker_log_dirs | default('/var/lib/kafka') }}"
+  port: "{{broker_config_port | default('9092')}}"
+  jmxport: "{{broker_config_jmxport | default('19999')}}" #to fix port binding
+  replications: "{{broker_replications | default(groups.middleware|list|length)}}"
+  partitions: "{{broker_partitions | default(groups.middleware|list|length)}}"
+  delete:
+    topic: "{{broker_delete_topic | default('yes')}}"
+  retention:
+    days: "{{broker_retention_days | default(365)}}"
+
+  topics:
+    esgi: "{{esgi_topic | default('esgi')}}"
+
+  partitions:
+    esgi: "{{esgi_partitions | default(broker_partitions | default(groups.middleware|list|length))}}"
+
+  message:
+    fetch:
+      max_bytes: "{{broker_message_fetch_max_bytes | default(104857600)}}"
+
+  replica:
+    fetch:
+      max_bytes: "{{broker_replica_fetch_max_bytes | default(104857600)}}"

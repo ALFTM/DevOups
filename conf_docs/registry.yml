@@ -1,0 +1,3 @@
+---
+
+  - include: playbooks/swarm/registry.yml

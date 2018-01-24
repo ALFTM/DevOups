@@ -1,0 +1,7 @@
+---
+
+- include: mirror.yml
+  when: not apache.mirror.use_default|bool
+
+- set_fact: apache_mirror="{{apache.mirror.default}}"
+  when: apache.mirror.use_default|bool

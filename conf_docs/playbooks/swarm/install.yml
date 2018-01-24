@@ -1,0 +1,8 @@
+---
+
+  - name: Install swarm nodes
+    hosts: swarm
+    any_errors_fatal: true
+    roles:
+      - {role: swarm, installation: manager, tags: ['add_manager']}
+      - {role: swarm, installation: worker, tags: ['add_worker']}

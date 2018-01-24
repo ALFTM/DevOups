@@ -1,0 +1,40 @@
+---
+
+  - name: Install ntp for RedHat
+    yum: name={{item}} state=present
+    with_items:
+      - ntp
+      - ntpdate
+    become: yes
+    when: ansible_os_family == 'RedHat'
+
+  - name: Install ntp for Debian
+    apt: name={{item}} state=present
+    with_items:
+      - ntp
+    become: yes
+    when: ansible_os_family == 'Debian'
+
+  - set_fact: ntp_service="ntpd"
+    when: ansible_os_family == 'RedHat'
+
+  - set_fact: ntp_service="ntp"
+    when: ansible_os_family == 'Debian'
+
+  - name: Ensure {{ntp_service}} service is stopped
+    service: 
+      name: "{{ntp_service}}" 
+      state: stopped
+    become: yes
+
+  - name: Update system date
+    command: /usr/sbin/ntpdate pool.ntp.org
+    become: yes
+    when: ansible_os_family == 'RedHat'
+
+  - name: Enable {{ntp_service}} service on boot and ensure ntpd is started
+    service: 
+      name: "{{ntp_service}}" 
+      enabled: yes 
+      state: started
+    become: yes

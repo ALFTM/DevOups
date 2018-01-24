@@ -1,0 +1,6 @@
+---
+
+docker_registry_users:
+  - name: docker
+    password: changeit
+    email: stephane.manciot@ebiznext.com

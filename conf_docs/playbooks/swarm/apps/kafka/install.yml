@@ -1,0 +1,98 @@
+---
+
+  - name: Install kafka brokers
+    hosts: middleware
+    any_errors_fatal: true
+    tasks:
+
+      - include_vars: "{{inventory_dir}}/../../vars/broker.yml"
+        tags:
+          - always
+
+      - name: Add group kafka
+        group: name=kafka gid={{broker.kafka.gid}} state=present
+        become: yes
+
+      - name: Add user kafka
+        user: name=kafka shell=/bin/bash uid={{broker.kafka.uid}} group=kafka
+        become: yes
+
+      # create required directories to all middleware nodes
+      - name: Add kafka logs directory to all middleware nodes
+        file: path={{broker.log.dirs}}/ state=directory owner=kafka group=kafka
+        become: yes
+
+      - name: Add kafka log directory to all middleware nodes
+        file: path={{broker.log.dir}}/ state=directory owner=kafka group=kafka
+        become: yes
+
+      - name: check zookeeper group
+        fail: msg="zookeeper group must be defined"
+        when: groups.zookeeper is undefined
+
+      - set_fact: nb={{groups.zookeeper|list|length}}
+        tags:
+          - always
+
+      - name: gather facts from zookeeper nodes
+        setup: gather_subset=network
+        delegate_to: "{{item}}"
+        delegate_facts: True
+        with_items: "{{groups['zookeeper']}}"
+        register: zookeeper_facts
+        become: yes
+        tags:
+          - always
+
+      - set_fact: zookeepers={{(zookeeper_facts.results | map(attribute='ansible_facts.'+(zookeeper_interface | default('ansible_default_ipv4'))+'.address') | list)}}
+        tags:
+          - always
+        when: zookeeper_facts|success
+
+      - name: generate zookeeper servers
+        set_fact: broker_zk="{% for id in range(0, nb|int) %}{{zookeepers[id|int]}}:2181{% if not loop.last %},{% endif %}{% endfor %}"
+        tags:
+          - always
+
+      - shell: sysctl -w net.netfilter.nf_conntrack_tcp_be_liberal=1
+        become: yes
+        tags:
+          - always
+
+      - include_vars: "{{inventory_dir}}/../../vars/registry.yml"
+        tags:
+          - always
+
+      - include: "{{inventory_dir}}/../../tasks/registry_facts.yml"
+        when: (not docker_registry_host is defined) or (not docker_registry_ip is defined)
+        tags:
+          - always
+
+      - name: stop previous kafka broker
+        command: "docker kill kafka"
+        ignore_errors: yes
+        become: yes
+        tags:
+          - kafka_brokers
+
+      - name: remove previous kafka broker
+        command: "docker rm kafka"
+        ignore_errors: yes
+        become: yes
+        tags:
+          - kafka_brokers
+
+      - name: pull kafka docker image
+        command: "docker pull {{docker_registry_host}}:{{docker.registry.port}}/kafka:{{broker.kafka.version}}"
+        become: yes
+        tags:
+          - kafka_brokers
+
+      - name: ensure kafka broker is running
+        command: "docker run -d -p {{broker.port}}:9092 -p {{broker.jmxport}}:19999 --name kafka --net=host --privileged=true --restart=always --memory=\"{{broker.mem}}m\" -v {{broker.log.dir}}:/var/log/kafka:rw -v {{broker.log.dirs}}:/var/lib/kafka:rw --env KAFKA_BROKER_ID={{broker.id}} --env 'KAFKA_ZK={{broker_zk}}' --env 'KAFKA_PARTITIONS=3' --env 'KAFKA_DELETE_TOPIC={{broker.delete.topic|bool|lower}}' --env 'KAFKA_RETENTION={{(24 * (broker.retention.days|int))|int}}' {{docker_registry_host}}:{{docker.registry.port}}/kafka:{{broker.kafka.version}}"
+#        command: "docker run -d -p {{broker.port}}:9092 -p {{broker.jmxport}}:19999 --name kafka --net=host --privileged=true --restart=always --memory=\"{{broker.mem}}m\" -v {{broker.log.dir}}:/var/log/kafka:rw -v {{broker.log.dirs}}:/var/lib/kafka:rw  -v /usr/local/kafka/config/log4j.properties:/usr/local/kafka/config/log4j.properties:ro --env KAFKA_BROKER_ID={{broker.id}} --env 'KAFKA_ZK={{broker_zk}}' --env 'KAFKA_PARTITIONS=3' --env 'KAFKA_DELETE_TOPIC={{broker.delete.topic|bool|lower}}' --env 'KAFKA_RETENTION={{(24 * (broker.retention.days|int))|int}}' {{docker_registry_host}}:{{docker.registry.port}}/kafka:{{broker.kafka.version}}"
+        #FIXME --env 'KAFKA_REPLICA_FETCH_MAX_BYTES={{broker.replica.fetch.max_bytes|int}}' --env 'KAFKA_MESSAGE_MAX_BYTES={{broker.message.max_bytes|int}}'
+        become: yes
+        tags:
+          - kafka_brokers
+

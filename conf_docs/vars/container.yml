@@ -1,0 +1,9 @@
+---
+
+container:
+  id: "{{ service_name | default('exempleService') }}"
+  exposed: "{{service_exposed | default('no')}}"
+  mem: "{{ service_container_mem | default(1024) }}"
+  cpus: "{{ service_container_cpus | default('1') }}"
+  instances: "{{ service_container_instances | default(1) }}"
+  constraints: "{{ service_container_constraints | default([]) }}"

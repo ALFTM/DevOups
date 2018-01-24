@@ -1,0 +1,3 @@
+---
+
+  - include: playbooks/swarm/apps/zookeeper/site.yml

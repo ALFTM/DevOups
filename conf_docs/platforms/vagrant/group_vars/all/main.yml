@@ -1,0 +1,15 @@
+use_default_apache_mirror: yes
+
+docker_registry_users:
+  - name: "{{vault_docker_registry_username}}"
+    password: "{{vault_docker_registry_password}}"
+    email: stephane.manciot@ebiznext.com
+
+docker_home: /var/lib/docker
+
+docker_registry_home: /var/lib/docker-registry
+
+docker_registry_ip: 192.168.56.210
+
+broker_interface:    "ansible_eth1.ipv4"
+zookeeper_interface: "ansible_eth1.ipv4"

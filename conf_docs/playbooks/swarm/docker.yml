@@ -1,0 +1,7 @@
+---
+
+  - name: Install docker
+    hosts: swarm
+    any_errors_fatal: true
+    roles:
+      - {role: docker, tags: ['add_master', 'add_slave']} 
